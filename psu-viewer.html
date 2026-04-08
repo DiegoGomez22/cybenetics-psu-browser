@@ -1,777 +1,1269 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PSU Database</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: #111;
-    color: #e0e0e0;
-    font-family: 'Inter', sans-serif;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid #1e1e1e;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-  }
-
-  h1 { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.3px; margin-right: 8px; }
-
-  .topbar input[type="text"] {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
-    border-radius: 6px;
-    padding: 7px 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    outline: none;
-    width: 220px;
-  }
-  .topbar input[type="text"]:focus { border-color: #444; }
-
-  .topbar select {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
-    border-radius: 6px;
-    padding: 7px 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    outline: none;
-    cursor: pointer;
-  }
-  .topbar select option { background: #1a1a1a; }
-
-  .btn {
-    padding: 7px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    border: 1px solid #2a2a2a;
-    background: #1a1a1a;
-    color: #888;
-    transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap;
-  }
-  .btn:hover { color: #e0e0e0; border-color: #444; }
-  .btn:disabled { opacity: 0.4; cursor: default; }
-
-  .count { font-size: 12px; color: #555; margin-left: auto; white-space: nowrap; }
-  .pin-hint { font-size: 10px; color: #555; white-space: nowrap; }
-
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    min-height: 0;
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    width: 240px;
-    min-width: 240px;
-    background: #0e0e0e;
-    border-right: 1px solid #1e1e1e;
-    overflow-y: auto;
-    transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    scrollbar-width: none;
-    .sidebar::-webkit-scrollbar { display: none; }
-  }
-  .sidebar.collapsed { width: 0; min-width: 0; overflow: hidden; }
-  .sidebar-inner { padding: 16px; min-width: 240px; }
-  .sidebar-section { margin-bottom: 20px; }
-  .sidebar-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: #444;
-    margin-bottom: 8px;
-    display: block;
-  }
-  .sidebar select {
-    width: 100%;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
-    border-radius: 6px;
-    padding: 7px 10px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    outline: none;
-    cursor: pointer;
-  }
-  .sidebar select option { background: #1a1a1a; }
-  .sidebar select:focus { border-color: #444; }
-
-  .range-wrap { display: flex; flex-direction: column; gap: 6px; }
-  .range-inputs { display: flex; gap: 6px; align-items: center; }
-  .range-inputs input[type="number"] {
-    width: 100%;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    outline: none;
-    appearance: textfield;
-    -moz-appearance: textfield;
-  }
-  .range-inputs input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
-  .range-inputs input[type="number"]:focus { border-color: #444; }
-  .range-sep { color: #444; font-size: 11px; flex-shrink: 0; }
-
-  .col-checks { display: flex; flex-direction: column; gap: 2px; }
-  .col-checks label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 6px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #aaa;
-    transition: background 0.1s, color 0.1s;
-  }
-  .col-checks label:hover { background: #1a1a1a; color: #e0e0e0; }
-  .col-checks input[type="checkbox"] {
-    accent-color: #e0e0e0;
-    width: 13px; height: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .sidebar-divider { border: none; border-top: 1px solid #1e1e1e; margin: 4px 0 16px; }
-
-  .btn-reset-filters {
-    width: 100%;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    border: 1px solid #2a2a2a;
-    background: transparent;
-    color: #666;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .btn-reset-filters:hover { color: #e0e0e0; border-color: #444; }
-
-  /* MAIN */
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-
-  /* Single scroll container */
-  .table-wrap { flex: 1; overflow: auto; }
-  .table-wrap::-webkit-scrollbar { height: 6px; width: 6px; }
-  .table-wrap::-webkit-scrollbar-track { background: #111; }
-  .table-wrap::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-  .table-wrap::-webkit-scrollbar-thumb:hover { background: #333; }
-  
-
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
-
-  /* Sticky header */
-  thead { position: sticky; top: 0; z-index: 20; background: #111; }
-
-  th {
-    padding: 10px 14px;
-    text-align: left;
-    font-weight: 500;
-    color: #555;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    border-bottom: 1px solid #1e1e1e;
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    background: #111;
-  }
-  th:hover { color: #aaa; }
-  th.asc::after { content: ' ↑'; }
-  th.desc::after { content: ' ↓'; }
-  th.pin-col { cursor: default; width: 28px; padding: 10px 6px 10px 14px; }
-  th.pin-col:hover { color: #555; }
-
-  /* Sticky pinned tbody — sits right below thead */
-  #pinnedBody {
-    position: sticky;
-    top: 37px; /* height of thead row */
-    z-index: 10;
-  }
-
-  #pinnedBody tr td {
-    background: #141b22;
-    border-bottom: 1px solid #1c2a38;
-    white-space: nowrap;
-    padding: 9px 14px;
-  }
-  
-  #pinnedBody tr:last-child td { border-bottom: 2px solid #1e3050; }
-  #pinnedBody tr:hover td { background: #18202a; }
-  #pinnedBody td.pin-cell {
-    padding: 9px 6px 9px 14px;
-    width: 28px;
-    cursor: grab;
-    color: #2a5a7a;
-    font-size: 13px;
-    min-width: 28px;
-    max-width: 28px;
-  }
-  #pinnedBody tr:hover td.pin-cell { color: #4a8aaa; }
-  #pinnedBody td.manufacturer { color: #6a90aa; }
-  #pinnedBody td.model { color: #b8d4e8; font-weight: 500; }
-  #pinnedBody td.num { color: #7aaac4; font-variant-numeric: tabular-nums; }
-  #pinnedBody td.date { color: #3a6070; }
-
-  /* Normal rows */
-  #tbody td {
-    padding: 9px 14px;
-    border-bottom: 1px solid #181818;
-    color: #ccc;
-    white-space: nowrap;
-  }
-  #tbody tr { cursor: pointer; }
-  #tbody tr:hover td { background: #161616; }
-  #tbody tr:hover td.pin-cell { color: #444; }
-  #tbody td.pin-cell {
-    padding: 9px 6px 9px 14px;
-    width: 28px;
-    color: #2a2a2a;
-    font-size: 13px;
-  }
-  #tbody td.manufacturer { color: #888; }
-  #tbody td.model { color: #e0e0e0; font-weight: 500; }
-  #tbody td.num { color: #aaa; font-variant-numeric: tabular-nums; }
-  #tbody td.date { color: #555; }
-
-  tr.dragging { opacity: 0.35; }
-  tr.drag-over td { border-top: 2px solid #3a7aa0 !important; }
-
-  .eff {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-  }
-  .eff-TITANIUM { color: #00ffaa; background: rgba(0,255,170,0.08); }
-  .eff-PLATINUM { color: #80deea; background: rgba(128,222,234,0.08); }
-  .eff-GOLD     { color: #ffe082; background: rgba(255,224,130,0.08); }
-  .eff-SILVER   { color: #b0bec5; background: rgba(176,190,197,0.08); }
-  .eff-BRONZE   { color: #ffab91; background: rgba(255,171,145,0.08); }
-
-  .pager {
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #444;
-    font-size: 12px;
-    border-top: 1px solid #1e1e1e;
-    flex-shrink: 0;
-  }
-  .pager-btns { display: flex; gap: 4px; }
-  .pager-btns button {
-    padding: 4px 10px;
-    font-size: 12px;
-    min-width: 32px;
-    border-radius: 6px;
-    border: 1px solid #2a2a2a;
-    background: #1a1a1a;
-    color: #888;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .pager-btns button:hover { color: #e0e0e0; border-color: #444; }
-  .pager-btns button.active { color: #e0e0e0; border-color: #555; }
-  .pager-btns button:disabled { opacity: 0.3; cursor: default; }
-
-  #loading { padding: 80px 32px; text-align: center; color: #444; font-size: 12px; }
-</style>
-</head>
-<body>
-
-<div class="topbar">
-  <h1>PSU Database</h1>
-  <button class="btn" id="sidebarToggleBtn">☰ Filtros</button>
-  <input type="text" id="search" placeholder="Buscar modelo o fabricante...">
-  <select id="perPage">
-    <option value="50">50 / pág</option>
-    <option value="100">100 / pág</option>
-    <option value="999999">Todos</option>
-  </select>
-  <button class="btn" id="updateBtn">↻ Actualizar</button>
-  <button class="btn" id="exportBtn">⬇ Exportar CSV</button>
-  <span class="pin-hint">· oble clic para pinnear · datos © <a href="https://www.cybenetics.com" target="_blank" style="color:#444; text-decoration:none;">Cybenetics</a></span>
-  <span class="count" id="countLabel"></span>
-</div>
-
-<div class="layout">
-
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-inner">
-      <div class="sidebar-section">
-        <span class="sidebar-label">Fabricante</span>
-        <select id="filterBrand"><option value="">Todos</option></select>
-      </div>
-      <div class="sidebar-section">
-        <span class="sidebar-label">Eficiencia</span>
-        <select id="filterEff">
-          <option value="">Todas</option>
-          <option>TITANIUM</option><option>PLATINUM</option>
-          <option>GOLD</option><option>SILVER</option><option>BRONZE</option>
-        </select>
-      </div>
-      <div class="sidebar-section">
-        <span class="sidebar-label">Ruido</span>
-        <select id="filterNoise"><option value="">Todos</option></select>
-      </div>
-      <div class="sidebar-section">
-        <span class="sidebar-label">Perf. Relativa</span>
-        <div class="range-wrap"><div class="range-inputs">
-          <input type="number" id="perfMin" placeholder="Mín" step="0.01">
-          <span class="range-sep">—</span>
-          <input type="number" id="perfMax" placeholder="Máx" step="0.01">
-        </div></div>
-      </div>
-      <div class="sidebar-section">
-        <span class="sidebar-label">Eficiencia Prom. [%]</span>
-        <div class="range-wrap"><div class="range-inputs">
-          <input type="number" id="effMin" placeholder="Mín" step="0.01">
-          <span class="range-sep">—</span>
-          <input type="number" id="effMax" placeholder="Máx" step="0.01">
-        </div></div>
-      </div>
-      <div class="sidebar-section">
-        <span class="sidebar-label">Total Score</span>
-        <div class="range-wrap"><div class="range-inputs">
-          <input type="number" id="scoreMin" placeholder="Mín" step="0.01">
-          <span class="range-sep">—</span>
-          <input type="number" id="scoreMax" placeholder="Máx" step="0.01">
-        </div></div>
-      </div>
-      <hr class="sidebar-divider">
-      <div class="sidebar-section">
-        <span class="sidebar-label">Columnas visibles</span>
-        <div class="col-checks" id="colChecks"></div>
-      </div>
-      <button class="btn-reset-filters" id="resetBtn">Limpiar filtros</button>
-    </div>
-  </div>
-
-  <div class="main">
-    <div id="loading">Cargando datos...</div>
-    <div class="table-wrap" id="tableWrap" style="display:none">
-      <table>
-        <thead><tr id="headerRow"></tr></thead>
-        <tbody id="pinnedBody"></tbody>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="pager">
-      <span id="pageInfo"></span>
-      <div class="pager-btns" id="pagerBtns"></div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-function noiseRank(val) {
-  if (!val) return 999;
-  const v = val.trim();
-  if (v === 'A++') return 1; if (v === 'A+') return 2;
-  if (v === 'A') return 3;   if (v === 'A-') return 4;
-  if (v === 'Standard++') return 5; if (v === 'Standard+') return 6;
-  if (v === 'Standard') return 7;   if (v === 'Standard-') return 8;
-  return 999;
-}
-
-function effRank(val) {
-  if (!val) return 999;
-  const v = val.toUpperCase();
-  if (v.includes('TITANIUM')) return 1; if (v.includes('PLATINUM')) return 2;
-  if (v.includes('GOLD')) return 3;     if (v.includes('SILVER')) return 4;
-  if (v.includes('BRONZE')) return 5;
-  return 999;
-}
-
-const COLS = [
-  { i: 0,  label: 'Fabricante',              cls: 'manufacturer', def: true },
-  { i: 1,  label: 'Modelo',                  cls: 'model',        def: true },
-  { i: 2,  label: 'Eficiencia',              cls: '',             def: true },
-  { i: 3,  label: 'Ruido',                   cls: '',             def: true },
-  { i: 4,  label: 'Total Score',             cls: 'num',          def: false },
-  { i: 5,  label: 'Perf. Relativa',          cls: 'num',          def: true },
-  { i: 6,  label: 'Eficiencia Prom. [%]',    cls: 'num',          def: true },
-  { i: 7,  label: 'Eficiencia Prom. 20-80W', cls: 'num',          def: false },
-  { i: 8,  label: 'Eficiencia 2% [%]',       cls: 'num',          def: false },
-  { i: 9,  label: 'Ruido Prom. [dB(A)]',     cls: 'num',          def: false },
-  { i: 10, label: 'Fecha Informe',            cls: 'date',         def: true },
-];
-
-let all = [], filtered = [], pinned = [];
-let sortCol = -1, sortDir = 1, page = 1;
-let visibleCols = COLS.map(c => ({ ...c, visible: c.def }));
-let dragSrc = null;
-
-function rowKey(r) { return r[0] + '||' + r[1]; }
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  return lines.map(line => {
-    const row = []; let inQ = false, cell = '';
-    for (let ch of line) {
-      if (ch === '"') inQ = !inQ;
-      else if (ch === ',' && !inQ) { row.push(cell.trim()); cell = ''; }
-      else cell += ch;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSU Database</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    row.push(cell.trim());
-    return row;
-  });
-}
 
-function renderCell(col, value) {
-  if (col.i === 2) {
-    const key = ['TITANIUM','PLATINUM','GOLD','SILVER','BRONZE'].find(x => value.toUpperCase().includes(x)) || '';
-    return key ? `<span class="eff eff-${key}">${value}</span>` : value || '—';
-  }
-  if ([4,5,6,7,8,9].includes(col.i)) {
-    const n = parseFloat(value);
-    return isNaN(n) ? '—' : n.toFixed(2) + ([6,7,8].includes(col.i) ? '%' : '');
-  }
-  return value || '—';
-}
+    body {
+      background: #111;
+      color: #e0e0e0;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-function buildHeader() {
-  const tr = document.getElementById('headerRow');
-  tr.innerHTML = `<th class="pin-col"></th>` + visibleCols
-    .filter(c => c.visible)
-    .map(c => `<th onclick="sort(${c.i})" id="th${c.i}">${c.label}</th>`)
-    .join('');
-  // update pinnedBody top offset to match actual thead height
-  requestAnimationFrame(() => {
-    const theadH = document.querySelector('thead').offsetHeight;
-    document.getElementById('pinnedBody').style.top = theadH + 'px';
-  });
-}
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #1e1e1e;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
 
-function makePinnedRow(r) {
-  const activeCols = visibleCols.filter(c => c.visible);
-  const tr = document.createElement('tr');
-  tr.draggable = true;
+    h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.3px;
+      margin-right: 8px;
+    }
 
-  const pinTd = document.createElement('td');
-  pinTd.className = 'pin-cell';
-  pinTd.textContent = '📌';
-  pinTd.title = 'Arrastra para reordenar · doble clic para despinnear';
-  tr.appendChild(pinTd);
+    .topbar input[type="text"] {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      outline: none;
+      width: 220px;
+    }
 
-  activeCols.forEach(col => {
-    const td = document.createElement('td');
-    td.className = col.cls;
-    td.innerHTML = renderCell(col, r[col.i] ?? '');
-    tr.appendChild(td);
-  });
+    .topbar input[type="text"]:focus {
+      border-color: #444;
+    }
 
-  tr.addEventListener('dragstart', e => {
-    dragSrc = r;
-    tr.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  });
-  tr.addEventListener('dragend', () => {
-    tr.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  });
-  tr.addEventListener('dragover', e => {
-    e.preventDefault();
-    document.querySelectorAll('#pinnedBody .drag-over').forEach(el => el.classList.remove('drag-over'));
-    if (dragSrc && rowKey(dragSrc) !== rowKey(r)) tr.classList.add('drag-over');
-  });
-  tr.addEventListener('drop', e => {
-    e.preventDefault();
-    tr.classList.remove('drag-over');
-    if (dragSrc && rowKey(dragSrc) !== rowKey(r)) {
-      const fi = pinned.findIndex(p => rowKey(p) === rowKey(dragSrc));
-      const ti = pinned.findIndex(p => rowKey(p) === rowKey(r));
-      if (fi !== -1 && ti !== -1) {
-        pinned.splice(fi, 1);
-        pinned.splice(ti, 0, dragSrc);
-        renderPinned();
+    .topbar select {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .topbar select option {
+      background: #1a1a1a;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #888;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      color: #e0e0e0;
+      border-color: #444;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .count {
+      font-size: 12px;
+      color: #999;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .pin-hint {
+      font-size: 10px;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #0e0e0e;
+      border-right: 1px solid #1e1e1e;
+      overflow-y: auto;
+      transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      scrollbar-width: none;
+
+      .sidebar::-webkit-scrollbar {
+        display: none;
       }
     }
-  });
-  tr.addEventListener('dblclick', () => {
-    pinned = pinned.filter(p => rowKey(p) !== rowKey(r));
-    renderPinned();
-    render();
-  });
 
-  return tr;
-}
-
-function makeDataRow(r) {
-  const activeCols = visibleCols.filter(c => c.visible);
-  const tr = document.createElement('tr');
-  tr.title = 'Doble clic para pinnear';
-
-  const pinTd = document.createElement('td');
-  pinTd.className = 'pin-cell';
-  pinTd.textContent = '·';
-  tr.appendChild(pinTd);
-
-  activeCols.forEach(col => {
-    const td = document.createElement('td');
-    td.className = col.cls;
-    td.innerHTML = renderCell(col, r[col.i] ?? '');
-    tr.appendChild(td);
-  });
-
-  tr.addEventListener('dblclick', () => {
-    if (!pinned.find(p => rowKey(p) === rowKey(r))) {
-      pinned.push(r);
-      renderPinned();
-      render();
+    .sidebar.collapsed {
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
     }
-  });
 
-  return tr;
-}
+    .sidebar-inner {
+      padding: 16px;
+      min-width: 240px;
+    }
 
-function renderPinned() {
-  const tbody = document.getElementById('pinnedBody');
-  tbody.innerHTML = '';
-  pinned.forEach(r => tbody.appendChild(makePinnedRow(r)));
-}
+    .sidebar-section {
+      margin-bottom: 20px;
+    }
 
-function buildColChecks() {
-  const wrap = document.getElementById('colChecks');
-  wrap.innerHTML = '';
-  visibleCols.forEach((col, idx) => {
-    const label = document.createElement('label');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = col.visible;
-    cb.addEventListener('change', () => {
-      visibleCols[idx].visible = cb.checked;
+    .sidebar-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #444;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .sidebar select {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .sidebar select option {
+      background: #1a1a1a;
+    }
+
+    .sidebar select:focus {
+      border-color: #444;
+    }
+
+    .multi-select {
+      position: relative;
+      width: 100%;
+    }
+
+    .multi-select-toggle {
+      width: 100%;
+      min-height: 34px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-height: 120px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .multi-select-toggle::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .multi-select-toggle::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .multi-select-toggle::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 3px;
+    }
+
+    .multi-select-toggle:hover {
+      border-color: #444;
+    }
+
+    .multi-select-menu {
+      position: fixed;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 6px;
+      display: none;
+      z-index: 50;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      width: 220px;
+      scrollbar-width: thin;
+      scrollbar-color: #2a2a2a #141414;
+    }
+
+    .multi-select-menu::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .multi-select-menu::-webkit-scrollbar-track {
+      background: #141414;
+    }
+
+    .multi-select-menu::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 3px;
+    }
+
+    .multi-select-menu::-webkit-scrollbar-thumb:hover {
+      background: #3a3a3a;
+    }
+
+    .multi-select.open .multi-select-menu {
+      display: block;
+    }
+
+    .multi-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #bcbcbc;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .multi-option:hover {
+      background: #1c1c1c;
+      color: #fff;
+    }
+
+    .multi-option.selected {
+      background: #242424;
+      color: #e0e0e0;
+    }
+
+    .multi-option input {
+      display: none;
+    }
+
+    .multi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #202020;
+      border: 1px solid #2d2d2d;
+      color: #cfcfcf;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .multi-chip-remove {
+      border: none;
+      background: transparent;
+      color: #7a7a7a;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0;
+    }
+
+    .multi-chip-remove:hover {
+      color: #d0d0d0;
+    }
+
+    .multi-placeholder {
+      color: #666;
+    }
+
+    .range-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .range-inputs {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .range-inputs input[type="number"] {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      outline: none;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+
+    .range-inputs input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .range-inputs input[type="number"]:focus {
+      border-color: #444;
+    }
+
+    .range-sep {
+      color: #444;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .col-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .col-checks label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #aaa;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .col-checks label:hover {
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+
+    .col-checks input[type="checkbox"] {
+      accent-color: #e0e0e0;
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid #1e1e1e;
+      margin: 4px 0 16px;
+    }
+
+    .btn-reset-filters {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      border: 1px solid #2a2a2a;
+      background: transparent;
+      color: #666;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .btn-reset-filters:hover {
+      color: #e0e0e0;
+      border-color: #444;
+    }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* Single scroll container */
+    .table-wrap {
+      flex: 1;
+      overflow: auto;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+
+    .table-wrap::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      background: #222;
+      border-radius: 3px;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb:hover {
+      background: #333;
+    }
+
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12.5px;
+    }
+
+    /* Sticky header */
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #111;
+    }
+
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 500;
+      color: #555;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      background: #111;
+    }
+
+    th:hover {
+      color: #aaa;
+    }
+
+    th.asc::after {
+      content: ' ↑';
+    }
+
+    th.desc::after {
+      content: ' ↓';
+    }
+
+    th.pin-col {
+      cursor: default;
+      width: 28px;
+      padding: 10px 6px 10px 14px;
+    }
+
+    th.pin-col:hover {
+      color: #555;
+    }
+
+    /* Sticky pinned tbody — sits right below thead */
+    #pinnedBody {
+      position: sticky;
+      top: 37px;
+      /* height of thead row */
+      z-index: 10;
+    }
+
+    #pinnedBody tr td {
+      background: #141b22;
+      border-bottom: 1px solid #1c2a38;
+      white-space: nowrap;
+      padding: 9px 14px;
+    }
+
+    #pinnedBody tr:last-child td {
+      border-bottom: 2px solid #1e3050;
+    }
+
+    #pinnedBody tr:hover td {
+      background: #18202a;
+    }
+
+    #pinnedBody td.pin-cell {
+      padding: 9px 6px 9px 14px;
+      width: 28px;
+      cursor: grab;
+      color: #2a5a7a;
+      font-size: 13px;
+      min-width: 28px;
+      max-width: 28px;
+    }
+
+    #pinnedBody tr:hover td.pin-cell {
+      color: #4a8aaa;
+    }
+
+    #pinnedBody td.manufacturer {
+      color: #6a90aa;
+    }
+
+    #pinnedBody td.model {
+      color: #b8d4e8;
+      font-weight: 500;
+    }
+
+    #pinnedBody td.num {
+      color: #7aaac4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #pinnedBody td.date {
+      color: #3a6070;
+    }
+
+    /* Normal rows */
+    #tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #181818;
+      color: #ccc;
+      white-space: nowrap;
+    }
+
+    #tbody tr {
+      cursor: pointer;
+    }
+
+    #tbody tr:hover td {
+      background: #161616;
+    }
+
+    #tbody tr:hover td.pin-cell {
+      color: #444;
+    }
+
+    #tbody td.pin-cell {
+      padding: 9px 6px 9px 14px;
+      width: 28px;
+      color: #2a2a2a;
+      font-size: 13px;
+    }
+
+    #tbody td.manufacturer {
+      color: #888;
+    }
+
+    #tbody td.model {
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+
+    #tbody td.num {
+      color: #aaa;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #tbody td.date {
+      color: #555;
+    }
+
+    tr.dragging {
+      opacity: 0.35;
+    }
+
+    tr.drag-over td {
+      border-top: 2px solid #3a7aa0 !important;
+    }
+
+    .eff {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .eff-TITANIUM {
+      color: #00ffaa;
+      background: rgba(0, 255, 170, 0.08);
+    }
+
+    .eff-PLATINUM {
+      color: #80deea;
+      background: rgba(128, 222, 234, 0.08);
+    }
+
+    .eff-GOLD {
+      color: #ffe082;
+      background: rgba(255, 224, 130, 0.08);
+    }
+
+    .eff-SILVER {
+      color: #b0bec5;
+      background: rgba(176, 190, 197, 0.08);
+    }
+
+    .eff-BRONZE {
+      color: #ffab91;
+      background: rgba(255, 171, 145, 0.08);
+    }
+
+    .pager {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #444;
+      font-size: 12px;
+      border-top: 1px solid #1e1e1e;
+      flex-shrink: 0;
+    }
+
+    .pager-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    .pager-btns button {
+      padding: 4px 10px;
+      font-size: 12px;
+      min-width: 32px;
+      border-radius: 6px;
+      border: 1px solid #2a2a2a;
+      background: #1a1a1a;
+      color: #888;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .pager-btns button:hover {
+      color: #e0e0e0;
+      border-color: #444;
+    }
+
+    .pager-btns button.active {
+      color: #e0e0e0;
+      border-color: #555;
+    }
+
+    .pager-btns button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    #loading {
+      padding: 80px 32px;
+      text-align: center;
+      color: #444;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="topbar">
+    <h1>PSU Database</h1>
+    <button class="btn" id="sidebarToggleBtn">☰ Filters</button>
+    <input type="text" id="search" placeholder="Search model or manufacturer...">
+    <select id="perPage">
+      <option value="50">50 / page</option>
+      <option value="100">100 / pág</option>
+      <option value="999999">All</option>
+    </select>
+    <button class="btn" id="updateBtn">↻ Update</button>
+    <button class="btn" id="exportBtn">⬇ Export CSV</button>
+    <span class="pin-hint">· Double click to pin · Data extracted from <a
+        href="https://www.cybenetics.com/index.php?option=psu-performance-database" target="_blank"
+        style="color:#696fa3; text-decoration:none;"> Cybenetics </a></span>
+    <span class="count" id="countLabel"></span>
+  </div>
+
+  <div class="layout">
+
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-section">
+          <span class="sidebar-label">Manufacturer</span>
+          <div class="multi-select" id="filterBrandMulti">
+            <div class="multi-select-toggle" id="filterBrandToggle">
+              <span class="multi-placeholder">All manufacturers</span>
+            </div>
+            <div class="multi-select-menu" id="filterBrandMenu"></div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Efficiency</span>
+          <div class="multi-select" id="filterEffMulti">
+            <div class="multi-select-toggle" id="filterEffToggle">
+              <span class="multi-placeholder">All</span>
+            </div>
+            <div class="multi-select-menu" id="filterEffMenu"></div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Noise</span>
+          <div class="multi-select" id="filterNoiseMulti">
+            <div class="multi-select-toggle" id="filterNoiseToggle">
+              <span class="multi-placeholder">All</span>
+            </div>
+            <div class="multi-select-menu" id="filterNoiseMenu"></div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Relative Performance</span>
+          <div class="range-wrap">
+            <div class="range-inputs">
+              <input type="number" id="perfMin" placeholder="Min" step="0.01">
+              <span class="range-sep">—</span>
+              <input type="number" id="perfMax" placeholder="Max" step="0.01">
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Efficiency AVG. [%]</span>
+          <div class="range-wrap">
+            <div class="range-inputs">
+              <input type="number" id="effMin" placeholder="Min" step="0.01">
+              <span class="range-sep">—</span>
+              <input type="number" id="effMax" placeholder="Max" step="0.01">
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <span class="sidebar-label">Total Score</span>
+          <div class="range-wrap">
+            <div class="range-inputs">
+              <input type="number" id="scoreMin" placeholder="Min" step="0.01">
+              <span class="range-sep">—</span>
+              <input type="number" id="scoreMax" placeholder="Max" step="0.01">
+            </div>
+          </div>
+        </div>
+        <hr class="sidebar-divider">
+        <div class="sidebar-section">
+          <span class="sidebar-label">Visible columns</span>
+          <div class="col-checks" id="colChecks"></div>
+        </div>
+        <button class="btn-reset-filters" id="resetBtn">Clear filters</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div id="loading">Loading data...</div>
+      <div class="table-wrap" id="tableWrap" style="display:none">
+        <table>
+          <thead>
+            <tr id="headerRow"></tr>
+          </thead>
+          <tbody id="pinnedBody"></tbody>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="pageInfo"></span>
+        <div class="pager-btns" id="pagerBtns"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function noiseRank(val) {
+      if (!val) return 999;
+      const v = val.trim();
+      if (v === 'A++') return 1; if (v === 'A+') return 2;
+      if (v === 'A') return 3; if (v === 'A-') return 4;
+      if (v === 'Standard++') return 5; if (v === 'Standard+') return 6;
+      if (v === 'Standard') return 7; if (v === 'Standard-') return 8;
+      return 999;
+    }
+
+    function effRank(val) {
+      if (!val) return 999;
+      const v = val.toUpperCase();
+      if (v.includes('TITANIUM')) return 1; if (v.includes('PLATINUM')) return 2;
+      if (v.includes('GOLD')) return 3; if (v.includes('SILVER')) return 4;
+      if (v.includes('BRONZE')) return 5;
+      return 999;
+    }
+
+    const COLS = [
+      { i: 0, label: 'Manufacturer', cls: 'manufacturer', def: true },
+      { i: 1, label: 'Model', cls: 'model', def: true },
+      { i: 2, label: 'Efficiency', cls: '', def: true },
+      { i: 3, label: 'Noise', cls: '', def: true },
+      { i: 4, label: 'Total Score', cls: 'num', def: true },
+      { i: 5, label: 'Relative Performance', cls: 'num', def: true },
+      { i: 6, label: 'Efficiency AVG. [%]', cls: 'num', def: true },
+      { i: 7, label: 'Efficiency AVG. 20-80W', cls: 'num', def: false },
+      { i: 8, label: 'Efficiency 2% [%]', cls: 'num', def: false },
+      { i: 9, label: 'Noise AVG. [dB(A)]', cls: 'num', def: false },
+      { i: 10, label: 'Report Date', cls: 'date', def: true },
+    ];
+
+    let all = [], filtered = [], pinned = [];
+    let sortCol = -1, sortDir = 1, page = 1;
+    let visibleCols = COLS.map(c => ({ ...c, visible: c.def }));
+    let dragSrc = null;
+
+    // Multi-select state
+    let selectedBrands = [];
+    let selectedEffs = [];
+    let selectedNoises = [];
+
+    function rowKey(r) { return r[0] + '||' + r[1]; }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      return lines.map(line => {
+        const row = []; let inQ = false, cell = '';
+        for (let ch of line) {
+          if (ch === '"') inQ = !inQ;
+          else if (ch === ',' && !inQ) { row.push(cell.trim()); cell = ''; }
+          else cell += ch;
+        }
+        row.push(cell.trim());
+        return row;
+      });
+    }
+
+    function renderCell(col, value) {
+      if (col.i === 2) {
+        const key = ['TITANIUM', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE'].find(x => value.toUpperCase().includes(x)) || '';
+        return key ? `<span class="eff eff-${key}">${value}</span>` : value || '—';
+      }
+      if ([4, 5, 6, 7, 8, 9].includes(col.i)) {
+        const n = parseFloat(value);
+        return isNaN(n) ? '—' : n.toFixed(2) + ([6, 7, 8].includes(col.i) ? '%' : '');
+      }
+      return value || '—';
+    }
+
+    function buildHeader() {
+      const tr = document.getElementById('headerRow');
+      tr.innerHTML = `<th class="pin-col"></th>` + visibleCols
+        .filter(c => c.visible)
+        .map(c => `<th onclick="sort(${c.i})" id="th${c.i}">${c.label}</th>`)
+        .join('');
+      requestAnimationFrame(() => {
+        const theadH = document.querySelector('thead').offsetHeight;
+        document.getElementById('pinnedBody').style.top = theadH + 'px';
+      });
+    }
+
+    function makePinnedRow(r) {
+      const activeCols = visibleCols.filter(c => c.visible);
+      const tr = document.createElement('tr');
+      tr.draggable = true;
+
+      const pinTd = document.createElement('td');
+      pinTd.className = 'pin-cell';
+      pinTd.textContent = '📌';
+      pinTd.title = 'Drag to reorder · double click to unpin';
+      tr.appendChild(pinTd);
+
+      activeCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = col.cls;
+        td.innerHTML = renderCell(col, r[col.i] ?? '');
+        tr.appendChild(td);
+      });
+
+      tr.addEventListener('dragstart', e => {
+        dragSrc = r;
+        tr.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      tr.addEventListener('dragend', () => {
+        tr.classList.remove('dragging');
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      });
+      tr.addEventListener('dragover', e => {
+        e.preventDefault();
+        document.querySelectorAll('#pinnedBody .drag-over').forEach(el => el.classList.remove('drag-over'));
+        if (dragSrc && rowKey(dragSrc) !== rowKey(r)) tr.classList.add('drag-over');
+      });
+      tr.addEventListener('drop', e => {
+        e.preventDefault();
+        tr.classList.remove('drag-over');
+        if (dragSrc && rowKey(dragSrc) !== rowKey(r)) {
+          const fi = pinned.findIndex(p => rowKey(p) === rowKey(dragSrc));
+          const ti = pinned.findIndex(p => rowKey(p) === rowKey(r));
+          if (fi !== -1 && ti !== -1) {
+            pinned.splice(fi, 1);
+            pinned.splice(ti, 0, dragSrc);
+            renderPinned();
+          }
+        }
+      });
+      tr.addEventListener('dblclick', () => {
+        pinned = pinned.filter(p => rowKey(p) !== rowKey(r));
+        renderPinned();
+        render();
+      });
+
+      return tr;
+    }
+
+    function makeDataRow(r) {
+      const activeCols = visibleCols.filter(c => c.visible);
+      const tr = document.createElement('tr');
+      tr.title = 'Double click to pin';
+
+      const pinTd = document.createElement('td');
+      pinTd.className = 'pin-cell';
+      pinTd.textContent = '·';
+      tr.appendChild(pinTd);
+
+      activeCols.forEach(col => {
+        const td = document.createElement('td');
+        td.className = col.cls;
+        td.innerHTML = renderCell(col, r[col.i] ?? '');
+        tr.appendChild(td);
+      });
+
+      tr.addEventListener('dblclick', () => {
+        if (!pinned.find(p => rowKey(p) === rowKey(r))) {
+          pinned.push(r);
+          renderPinned();
+          render();
+        }
+      });
+
+      return tr;
+    }
+
+    function renderPinned() {
+      const tbody = document.getElementById('pinnedBody');
+      tbody.innerHTML = '';
+      pinned.forEach(r => tbody.appendChild(makePinnedRow(r)));
+    }
+
+    function buildColChecks() {
+      const wrap = document.getElementById('colChecks');
+      wrap.innerHTML = '';
+      visibleCols.forEach((col, idx) => {
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = col.visible;
+        cb.addEventListener('change', () => {
+          visibleCols[idx].visible = cb.checked;
+          buildHeader();
+          renderPinned();
+          render();
+        });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(col.label));
+        wrap.appendChild(label);
+      });
+    }
+
+    // Multi-select helper functions
+    function setupMultiSelect(toggleId, menuId, selectedArray, options, onChangeCallback) {
+      const toggle = document.getElementById(toggleId);
+      const menu = document.getElementById(menuId);
+      const container = toggle.parentElement;
+
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        container.classList.toggle('open');
+        // Position menu fixed relative to viewport when open
+        if (container.classList.contains('open')) {
+          const rect = toggle.getBoundingClientRect();
+          menu.style.top = (rect.bottom + 6) + 'px';
+          menu.style.left = rect.left + 'px';
+        }
+      });
+
+      menu.innerHTML = `
+    <div class="multi-option" data-clear="true">
+      <span>Clear all</span>
+    </div>
+  ` + options.map((opt, idx) => `
+    <div class="multi-option ${selectedArray.includes(opt) ? 'selected' : ''}" data-idx="${idx}">
+      <span>${opt}</span>
+    </div>
+  `).join('');
+
+      menu.querySelector('[data-clear="true"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedArray.length = 0;
+        menu.querySelectorAll('.multi-option[data-idx]').forEach(optEl => {
+          optEl.classList.remove('selected');
+        });
+        updateMultiSelectDisplay(toggleId, selectedArray, options);
+        onChangeCallback();
+      });
+
+      menu.querySelectorAll('.multi-option[data-idx]').forEach(optEl => {
+        optEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(optEl.dataset.idx);
+          const opt = options[idx];
+          if (selectedArray.includes(opt)) {
+            const i = selectedArray.indexOf(opt);
+            selectedArray.splice(i, 1);
+            optEl.classList.remove('selected');
+          } else {
+            selectedArray.push(opt);
+            optEl.classList.add('selected');
+          }
+          updateMultiSelectDisplay(toggleId, selectedArray, options);
+          onChangeCallback();
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+          container.classList.remove('open');
+        }
+      });
+
+      updateMultiSelectDisplay(toggleId, selectedArray, options);
+    }
+
+    function updateMultiSelectDisplay(toggleId, selectedArray, allOptions) {
+      const toggle = document.getElementById(toggleId);
+      toggle.innerHTML = '';
+
+      if (selectedArray.length === 0) {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'multi-placeholder';
+        placeholder.textContent = toggleId.includes('Brand') ? 'All manufacturers' : 'All';
+        toggle.appendChild(placeholder);
+      } else {
+        selectedArray.forEach(item => {
+          const chip = document.createElement('div');
+          chip.className = 'multi-chip';
+          chip.innerHTML = `${item} <button class="multi-chip-remove" data-item="${item}">✕</button>`;
+          toggle.appendChild(chip);
+
+          chip.querySelector('.multi-chip-remove').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = selectedArray.indexOf(item);
+            if (idx !== -1) selectedArray.splice(idx, 1);
+            setupMultiSelect(toggleId, toggleId.replace('Toggle', 'Menu'), selectedArray, allOptions, applyFilters);
+          });
+        });
+      }
+    }
+
+    function init(csv) {
+      const rows = parseCSV(csv);
+      all = rows.slice(1).filter(r => r.length >= 11 && r.some(c => c));
+
+      const brands = [...new Set(all.map(r => r[0]))].sort();
+      const effs = ['TITANIUM', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE'];
+      const noises = [...new Set(all.map(r => r[3]).filter(Boolean))]
+        .sort((a, b) => noiseRank(a) - noiseRank(b));
+
+      setupMultiSelect('filterBrandToggle', 'filterBrandMenu', selectedBrands, brands, applyFilters);
+      setupMultiSelect('filterEffToggle', 'filterEffMenu', selectedEffs, effs, applyFilters);
+      setupMultiSelect('filterNoiseToggle', 'filterNoiseMenu', selectedNoises, noises, applyFilters);
+
+      buildColChecks();
       buildHeader();
-      renderPinned();
-      render();
-    });
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(col.label));
-    wrap.appendChild(label);
-  });
-}
 
-function init(csv) {
-  const rows = parseCSV(csv);
-  all = rows.slice(1).filter(r => r.length >= 11 && r.some(c => c));
-
-  const brandSel = document.getElementById('filterBrand');
-  while (brandSel.options.length > 1) brandSel.remove(1);
-  [...new Set(all.map(r => r[0]))].sort().forEach(b => {
-    const o = document.createElement('option');
-    o.value = o.textContent = b;
-    brandSel.appendChild(o);
-  });
-
-  const noiseSel = document.getElementById('filterNoise');
-  while (noiseSel.options.length > 1) noiseSel.remove(1);
-  [...new Set(all.map(r => r[3]).filter(Boolean))]
-    .sort((a, b) => noiseRank(a) - noiseRank(b))
-    .forEach(n => {
-      const o = document.createElement('option');
-      o.value = o.textContent = n;
-      noiseSel.appendChild(o);
-    });
-
-  buildColChecks();
-  buildHeader();
-
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('tableWrap').style.display = 'block';
-  applyFilters();
-}
-
-fetch('/psu.csv')
-  .then(r => r.text())
-  .then(csv => init(csv))
-  .catch(() => {
-    document.getElementById('loading').textContent = 'No se encontró psu.csv. Usa ↻ Actualizar.';
-  });
-
-function getNum(id) {
-  const v = document.getElementById(id).value;
-  return v === '' ? null : parseFloat(v);
-}
-
-function applyFilters() {
-  const q        = document.getElementById('search').value.toLowerCase();
-  const eff      = document.getElementById('filterEff').value;
-  const noise    = document.getElementById('filterNoise').value;
-  const brand    = document.getElementById('filterBrand').value;
-  const perfMin  = getNum('perfMin'), perfMax  = getNum('perfMax');
-  const effMin   = getNum('effMin'),  effMax   = getNum('effMax');
-  const scoreMin = getNum('scoreMin'),scoreMax = getNum('scoreMax');
-  const pinnedKeys = new Set(pinned.map(rowKey));
-
-  filtered = all.filter(r => {
-    if (pinnedKeys.has(rowKey(r))) return false;
-    if (q && !r[0].toLowerCase().includes(q) && !r[1].toLowerCase().includes(q)) return false;
-    if (brand && r[0] !== brand) return false;
-    if (eff && !r[2].toUpperCase().includes(eff)) return false;
-    if (noise && r[3] !== noise) return false;
-    const perf  = parseFloat(r[5]);
-    const effP  = parseFloat(r[6]);
-    const score = parseFloat(r[4]);
-    if (perfMin  !== null && !isNaN(perf)  && perf  < perfMin)  return false;
-    if (perfMax  !== null && !isNaN(perf)  && perf  > perfMax)  return false;
-    if (effMin   !== null && !isNaN(effP)  && effP  < effMin)   return false;
-    if (effMax   !== null && !isNaN(effP)  && effP  > effMax)   return false;
-    if (scoreMin !== null && !isNaN(score) && score < scoreMin) return false;
-    if (scoreMax !== null && !isNaN(score) && score > scoreMax) return false;
-    return true;
-  });
-
-  if (sortCol >= 0) {
-    filtered.sort((a, b) => {
-      let av, bv;
-      if (sortCol === 2)      { av = effRank(a[2]);   bv = effRank(b[2]); }
-      else if (sortCol === 3) { av = noiseRank(a[3]); bv = noiseRank(b[3]); }
-      else { av = parseFloat(a[sortCol]) || a[sortCol] || ''; bv = parseFloat(b[sortCol]) || b[sortCol] || ''; }
-      return av < bv ? -sortDir : av > bv ? sortDir : 0;
-    });
-  }
-
-  page = 1;
-  render();
-}
-
-function render() {
-  const pp = parseInt(document.getElementById('perPage').value);
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / pp));
-  const start = (page - 1) * pp;
-  const pageData = filtered.slice(start, start + pp);
-
-  document.getElementById('countLabel').textContent = `${filtered.length} de ${all.length} PSUs`;
-  document.getElementById('pageInfo').textContent = `Página ${page} de ${totalPages}`;
-
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  pageData.forEach(r => tbody.appendChild(makeDataRow(r)));
-
-  const pager = document.getElementById('pagerBtns');
-  pager.innerHTML = '';
-  pager.appendChild(mkBtn('←', page === 1, () => { page--; render(); }));
-
-  const range = [];
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) range.push(i);
-    else if (range[range.length-1] !== '...') range.push('...');
-  }
-  range.forEach(p => {
-    const b = mkBtn(p, p === '...', () => { page = p; render(); });
-    if (p === page) b.classList.add('active');
-    pager.appendChild(b);
-  });
-  pager.appendChild(mkBtn('→', page === totalPages, () => { page++; render(); }));
-}
-
-function mkBtn(label, disabled, fn) {
-  const b = document.createElement('button');
-  b.textContent = label;
-  b.disabled = disabled;
-  b.onclick = fn;
-  return b;
-}
-
-function sort(col) {
-  if (sortCol === col) sortDir *= -1;
-  else { sortCol = col; sortDir = 1; }
-  document.querySelectorAll('#headerRow th').forEach(th => th.classList.remove('asc','desc'));
-  const th = document.getElementById('th' + col);
-  if (th) th.classList.add(sortDir === 1 ? 'asc' : 'desc');
-  applyFilters();
-}
-
-document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('collapsed');
-});
-
-['filterEff','filterNoise','filterBrand','perPage'].forEach(id =>
-  document.getElementById(id).addEventListener('change', applyFilters));
-document.getElementById('search').addEventListener('input', applyFilters);
-['perfMin','perfMax','effMin','effMax','scoreMin','scoreMax'].forEach(id =>
-  document.getElementById(id).addEventListener('input', applyFilters));
-
-document.getElementById('resetBtn').addEventListener('click', () => {
-  document.getElementById('search').value = '';
-  ['filterEff','filterNoise','filterBrand','perPage'].forEach(id =>
-    document.getElementById(id).selectedIndex = 0);
-  ['perfMin','perfMax','effMin','effMax','scoreMin','scoreMax'].forEach(id =>
-    document.getElementById(id).value = '');
-  sortCol = -1; sortDir = 1;
-  document.querySelectorAll('#headerRow th').forEach(th => th.classList.remove('asc','desc'));
-  applyFilters();
-});
-
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const activeCols = visibleCols.filter(c => c.visible);
-  const hdr = activeCols.map(c => c.label).join(',');
-  const rows = [hdr, ...[...pinned, ...filtered].map(r => activeCols.map(c => `"${r[c.i]}"`).join(','))];
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([rows.join('\n')], {type:'text/csv'}));
-  a.download = 'psu-filtrado.csv';
-  a.click();
-});
-
-document.getElementById('updateBtn').addEventListener('click', async () => {
-  if (!confirm('¿Actualizar la base de datos desde Cybenetics? Esto abrirá un navegador en segundo plano.')) return;
-  const btn = document.getElementById('updateBtn');
-  btn.textContent = 'Actualizando...';
-  btn.disabled = true;
-  try {
-    const res = await fetch('/actualizar', { method: 'POST' });
-    const data = await res.json();
-    if (data.ok) {
-      const csv = await fetch('/psu.csv').then(r => r.text());
-      pinned = [];
-      init(csv);
-      alert(`✓ ${data.count} PSUs actualizadas.`);
-    } else {
-      alert('Error: ' + data.error);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('tableWrap').style.display = 'block';
+      applyFilters();
     }
-  } catch {
-    alert('No se pudo conectar al servidor.');
-  } finally {
-    btn.textContent = '↻ Actualizar';
-    btn.disabled = false;
-  }
-});
-</script>
+
+    fetch('/psu.csv')
+      .then(r => r.text())
+      .then(csv => init(csv))
+      .catch(() => {
+        document.getElementById('loading').textContent = 'psu.csv not found. Use ↻ Update.';
+      });
+
+    function getNum(id) {
+      const v = document.getElementById(id).value;
+      return v === '' ? null : parseFloat(v);
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const perfMin = getNum('perfMin'), perfMax = getNum('perfMax');
+      const effMin = getNum('effMin'), effMax = getNum('effMax');
+      const scoreMin = getNum('scoreMin'), scoreMax = getNum('scoreMax');
+      const pinnedKeys = new Set(pinned.map(rowKey));
+
+      filtered = all.filter(r => {
+        if (pinnedKeys.has(rowKey(r))) return false;
+        if (q && !r[0].toLowerCase().includes(q) && !r[1].toLowerCase().includes(q)) return false;
+        if (selectedBrands.length > 0 && !selectedBrands.includes(r[0])) return false;
+        if (selectedEffs.length > 0 && !selectedEffs.some(e => r[2].toUpperCase().includes(e))) return false;
+        if (selectedNoises.length > 0 && !selectedNoises.includes(r[3])) return false;
+        const perf = parseFloat(r[5]);
+        const effP = parseFloat(r[6]);
+        const score = parseFloat(r[4]);
+        if (perfMin !== null && !isNaN(perf) && perf < perfMin) return false;
+        if (perfMax !== null && !isNaN(perf) && perf > perfMax) return false;
+        if (effMin !== null && !isNaN(effP) && effP < effMin) return false;
+        if (effMax !== null && !isNaN(effP) && effP > effMax) return false;
+        if (scoreMin !== null && !isNaN(score) && score < scoreMin) return false;
+        if (scoreMax !== null && !isNaN(score) && score > scoreMax) return false;
+        return true;
+      });
+
+      if (sortCol >= 0) {
+        filtered.sort((a, b) => {
+          let av, bv;
+          if (sortCol === 2) { av = effRank(a[2]); bv = effRank(b[2]); }
+          else if (sortCol === 3) { av = noiseRank(a[3]); bv = noiseRank(b[3]); }
+          else { av = parseFloat(a[sortCol]) || a[sortCol] || ''; bv = parseFloat(b[sortCol]) || b[sortCol] || ''; }
+          return av < bv ? -sortDir : av > bv ? sortDir : 0;
+        });
+      }
+
+      page = 1;
+      render();
+    }
+
+    function render() {
+      const pp = parseInt(document.getElementById('perPage').value);
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total / pp));
+      const start = (page - 1) * pp;
+      const pageData = filtered.slice(start, start + pp);
+
+      document.getElementById('countLabel').textContent = `${filtered.length} of ${all.length} PSUs`;
+      document.getElementById('pageInfo').textContent = `Page ${page} of ${totalPages}`;
+
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      pageData.forEach(r => tbody.appendChild(makeDataRow(r)));
+
+      const pager = document.getElementById('pagerBtns');
+      pager.innerHTML = '';
+      pager.appendChild(mkBtn('←', page === 1, () => { page--; render(); }));
+
+      const range = [];
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) range.push(i);
+        else if (range[range.length - 1] !== '...') range.push('...');
+      }
+      range.forEach(p => {
+        const b = mkBtn(p, p === '...', () => { page = p; render(); });
+        if (p === page) b.classList.add('active');
+        pager.appendChild(b);
+      });
+      pager.appendChild(mkBtn('→', page === totalPages, () => { page++; render(); }));
+    }
+
+    function mkBtn(label, disabled, fn) {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.disabled = disabled;
+      b.onclick = fn;
+      return b;
+    }
+
+    function sort(col) {
+      if (sortCol === col) sortDir *= -1;
+      else { sortCol = col; sortDir = 1; }
+      document.querySelectorAll('#headerRow th').forEach(th => th.classList.remove('asc', 'desc'));
+      const th = document.getElementById('th' + col);
+      if (th) th.classList.add(sortDir === 1 ? 'asc' : 'desc');
+      applyFilters();
+    }
+
+    document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+
+    document.getElementById('search').addEventListener('input', applyFilters);
+    ['perfMin', 'perfMax', 'effMin', 'effMax', 'scoreMin', 'scoreMax'].forEach(id =>
+      document.getElementById(id).addEventListener('input', applyFilters));
+
+    document.getElementById('perPage').addEventListener('change', applyFilters);
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('search').value = '';
+      selectedBrands = [];
+      selectedEffs = [];
+      selectedNoises = [];
+      const brands = [...new Set(all.map(r => r[0]))].sort();
+      const effs = ['TITANIUM', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE'];
+      const noises = [...new Set(all.map(r => r[3]).filter(Boolean))]
+        .sort((a, b) => noiseRank(a) - noiseRank(b));
+      setupMultiSelect('filterBrandToggle', 'filterBrandMenu', selectedBrands, brands, applyFilters);
+      setupMultiSelect('filterEffToggle', 'filterEffMenu', selectedEffs, effs, applyFilters);
+      setupMultiSelect('filterNoiseToggle', 'filterNoiseMenu', selectedNoises, noises, applyFilters);
+      ['perfMin', 'perfMax', 'effMin', 'effMax', 'scoreMin', 'scoreMax'].forEach(id =>
+        document.getElementById(id).value = '');
+      sortCol = -1; sortDir = 1;
+      document.querySelectorAll('#headerRow th').forEach(th => th.classList.remove('asc', 'desc'));
+      applyFilters();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const activeCols = visibleCols.filter(c => c.visible);
+      const hdr = activeCols.map(c => c.label).join(',');
+      const rows = [hdr, ...[...pinned, ...filtered].map(r => activeCols.map(c => `"${r[c.i]}"`).join(','))];
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+      a.download = 'psu-filtered.csv';
+      a.click();
+    });
+
+    document.getElementById('updateBtn').addEventListener('click', async () => {
+      if (!confirm('Update database from Cybenetics? This will open a browser in the background.')) return;
+      const btn = document.getElementById('updateBtn');
+      btn.textContent = 'Updating...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/actualizar', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          const csv = await fetch('/psu.csv').then(r => r.text());
+          pinned = [];
+          init(csv);
+          alert(`✓ ${data.count} PSUs updated.`);
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch {
+        alert('Could not connect to server.');
+      } finally {
+        btn.textContent = '↻ Update';
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body>
+
 </html>
